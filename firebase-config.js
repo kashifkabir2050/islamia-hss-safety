@@ -14,7 +14,6 @@
 // 7. Replace the placeholder values below with your real config
 //
 // =====================================================
-
 const firebaseConfig = {
   apiKey: "AIzaSyCSJ-12Tp0EIvnZnR61fM0kcx5PesTrDPo",
   authDomain: "islamia-hss-safety.firebaseapp.com",
