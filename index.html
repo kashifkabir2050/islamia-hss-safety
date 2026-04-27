@@ -14,6 +14,26 @@
 </head>
 <body>
 
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">☪</div>
+    <div class="login-school">Pakistan Islamia HSS</div>
+    <div class="login-tag">Safety Management System</div>
+    <div class="lf-row">
+      <label>Username</label>
+      <input type="text" id="lu" placeholder="Enter username" />
+    </div>
+    <div class="lf-row">
+      <label>Password</label>
+      <input type="password" id="lp" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <div id="lerr" class="lerr"></div>
+    <button class="lbtn" onclick="doLogin()">Sign In →</button>
+    <div class="lhint">Default: admin / islamia2024</div>
+  </div>
+</div>
+
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="logo-emblem">☪</div>
@@ -37,6 +57,7 @@
   <div class="sidebar-footer">
     <div class="date-display" id="sidebarDate"></div>
     <div class="firebase-status" id="fbStatus">● Connecting…</div>
+    <button onclick="doLogout()" style="margin-top:10px;width:100%;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:7px;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.5px;">⏻ Logout</button>
   </div>
 </nav>
 
@@ -72,11 +93,11 @@
     <div class="dash-grid">
       <div class="card">
         <div class="card-header"><span>Weekly Safety Overview</span><button class="btn-small" onclick="downloadChartPDF('weeklyChart','Weekly Safety Overview')">↓ PDF</button></div>
-        <canvas id="weeklyChart" height="220"></canvas>
+        <div class="chart-wrap"><canvas id="weeklyChart"></canvas></div>
       </div>
       <div class="card">
         <div class="card-header"><span>Instrument Status</span><button class="btn-small" onclick="downloadChartPDF('statusChart','Instrument Status')">↓ PDF</button></div>
-        <canvas id="statusChart" height="220"></canvas>
+        <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
       </div>
     </div>
     <div class="card mt">
@@ -181,19 +202,19 @@
     <div class="dash-grid">
       <div class="card">
         <div class="card-header"><span>Monthly CCTV Analysis</span><button class="btn-small" onclick="downloadChartPDF('cctvMonthChart','Monthly CCTV')">↓ PDF</button></div>
-        <canvas id="cctvMonthChart" height="240"></canvas>
+        <div class="chart-wrap"><canvas id="cctvMonthChart"></canvas></div>
       </div>
       <div class="card">
         <div class="card-header"><span>First Aid by Type</span><button class="btn-small" onclick="downloadChartPDF('aidPieChart','First Aid Types')">↓ PDF</button></div>
-        <canvas id="aidPieChart" height="240"></canvas>
+        <div class="chart-wrap"><canvas id="aidPieChart"></canvas></div>
       </div>
       <div class="card">
         <div class="card-header"><span>Transport Status Summary</span><button class="btn-small" onclick="downloadChartPDF('transportBarChart','Transport Status')">↓ PDF</button></div>
-        <canvas id="transportBarChart" height="240"></canvas>
+        <div class="chart-wrap"><canvas id="transportBarChart"></canvas></div>
       </div>
       <div class="card">
         <div class="card-header"><span>Instrument Health</span><button class="btn-small" onclick="downloadChartPDF('instrHealthChart','Instrument Health')">↓ PDF</button></div>
-        <canvas id="instrHealthChart" height="240"></canvas>
+        <div class="chart-wrap"><canvas id="instrHealthChart"></canvas></div>
       </div>
     </div>
     <div class="card mt">

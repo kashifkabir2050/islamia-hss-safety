@@ -1,3 +1,27 @@
+// ===== LOGIN =====
+var LOGIN_USERS = { 'admin':'islamia2024', 'principal':'principal123', 'safety':'safety2024' };
+
+function doLogin() {
+  var u = document.getElementById('lu').value.trim().toLowerCase();
+  var p = document.getElementById('lp').value;
+  var e = document.getElementById('lerr');
+  e.textContent = '';
+  if (!u || !p) { e.textContent = '⚠ Enter username and password'; return; }
+  if (!LOGIN_USERS[u] || LOGIN_USERS[u] !== p) { e.textContent = '✕ Invalid username or password'; document.getElementById('lp').value=''; return; }
+  sessionStorage.setItem('pihss_loggedin','1');
+  document.getElementById('loginOverlay').style.display = 'none';
+}
+
+function doLogout() {
+  sessionStorage.removeItem('pihss_loggedin');
+  location.reload();
+}
+
+// Auto-hide if already logged in
+(function(){ if(sessionStorage.getItem('pihss_loggedin')==='1') document.getElementById('loginOverlay').style.display='none'; })();
+
+// ===== END LOGIN =====
+
 // =====================================================
 // PAKISTAN ISLAMIA HSS – SAFETY MANAGEMENT SYSTEM
 // Main Application Logic
@@ -771,10 +795,14 @@ function chartOptions() {
 }
 
 function renderChart(id, config) {
-  if (chartInstances[id]) { chartInstances[id].destroy(); }
+  if (chartInstances[id]) { try { chartInstances[id].destroy(); } catch(e){} delete chartInstances[id]; }
   const canvas = document.getElementById(id);
   if (!canvas) return;
-  chartInstances[id] = new Chart(canvas, config);
+  // Ensure maintainAspectRatio is false so the chart fills its wrapper
+  if (!config.options) config.options = {};
+  config.options.responsive = true;
+  config.options.maintainAspectRatio = false;
+  chartInstances[id] = new Chart(canvas.getContext('2d'), config);
 }
 
 // ===== PDF EXPORTS =====
