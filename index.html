@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pakistan Islamia HSS – Safety Management System</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-emblem">☪</div>
+    <div class="logo-text">
+      <span class="logo-main">PIHSS Safety Management System</span>
+      <span class="logo-sub">Safety Management System</span>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#" class="nav-item active" data-page="dashboard"><span class="nav-icon">⬡</span> Dashboard</a></li>
+    <li class="nav-section">SECURITY SYSTEMS</li>
+    <li><a href="#" class="nav-item" data-page="cctv"><span class="nav-icon">◉</span> CCTV Records</a></li>
+    <li><a href="#" class="nav-item" data-page="firstaid"><span class="nav-icon">✚</span> First Aid</a></li>
+    <li><a href="#" class="nav-item" data-page="transport"><span class="nav-icon">▷</span> Transport</a></li>
+    <li class="nav-section">MONITORING</li>
+    <li><a href="#" class="nav-item" data-page="instruments"><span class="nav-icon">◈</span> Instruments</a></li>
+    <li><a href="#" class="nav-item" data-page="alerts"><span class="nav-icon">⚠</span> Alerts <span class="badge" id="alertBadge">0</span></a></li>
+    <li class="nav-section">REPORTS</li>
+    <li><a href="#" class="nav-item" data-page="reports"><span class="nav-icon">▦</span> Reports</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <div class="date-display" id="sidebarDate"></div>
+    <div class="firebase-status" id="fbStatus">● Connecting…</div>
+  </div>
+</nav>
+
+<main class="main-content">
+  <header class="topbar">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <h1 class="page-title" id="pageTitle">Dashboard</h1>
+    <div class="topbar-right">
+      <span class="current-date" id="topDate"></span>
+    </div>
+  </header>
+
+  <!-- DASHBOARD -->
+  <section class="page active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon cctv-color">◉</div>
+        <div class="stat-body"><div class="stat-value" id="stat-cctv">--</div><div class="stat-label">CCTV Logs Today</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon aid-color">✚</div>
+        <div class="stat-body"><div class="stat-value" id="stat-aid">--</div><div class="stat-label">First Aid Cases</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon transport-color">▷</div>
+        <div class="stat-body"><div class="stat-value" id="stat-transport">--</div><div class="stat-label">Transport Trips</div></div>
+      </div>
+      <div class="stat-card alert-stat">
+        <div class="stat-icon alert-color">⚠</div>
+        <div class="stat-body"><div class="stat-value" id="stat-alerts">--</div><div class="stat-label">Active Alerts</div></div>
+      </div>
+    </div>
+    <div class="dash-grid">
+      <div class="card">
+        <div class="card-header"><span>Weekly Safety Overview</span><button class="btn-small" onclick="downloadChartPDF('weeklyChart','Weekly Safety Overview')">↓ PDF</button></div>
+        <canvas id="weeklyChart" height="220"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header"><span>Instrument Status</span><button class="btn-small" onclick="downloadChartPDF('statusChart','Instrument Status')">↓ PDF</button></div>
+        <canvas id="statusChart" height="220"></canvas>
+      </div>
+    </div>
+    <div class="card mt">
+      <div class="card-header"><span>Recent Activity</span></div>
+      <div id="recentActivity" class="activity-list"><div class="loading-msg">Loading…</div></div>
+    </div>
+  </section>
+
+  <!-- CCTV -->
+  <section class="page" id="page-cctv">
+    <div class="card">
+      <div class="card-header"><span>CCTV Daily Log</span><button class="btn-primary" onclick="openModal('cctv')">+ Add Record</button></div>
+      <div class="filter-bar">
+        <input type="date" id="cctvFilter" onchange="loadCCTV()" />
+        <select id="cctvStatusFilter" onchange="loadCCTV()">
+          <option value="">All Status</option><option>Working</option><option>Faulty</option><option>Offline</option>
+        </select>
+        <button class="btn-outline" onclick="downloadTablePDF('cctvTable','CCTV Records')">↓ PDF</button>
+      </div>
+      <div class="table-wrap">
+        <table id="cctvTable">
+          <thead><tr><th>Date</th><th>Camera ID</th><th>Location</th><th>Status</th><th>Inspector</th><th>Notes</th><th>Actions</th></tr></thead>
+          <tbody id="cctvBody"><tr><td colspan="7" class="loading-td">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- FIRST AID -->
+  <section class="page" id="page-firstaid">
+    <div class="card">
+      <div class="card-header"><span>First Aid Records</span><button class="btn-primary" onclick="openModal('firstaid')">+ Add Record</button></div>
+      <div class="filter-bar">
+        <input type="date" id="firstaidFilter" onchange="loadFirstAid()" />
+        <select id="firstaidTypeFilter" onchange="loadFirstAid()">
+          <option value="">All Types</option><option>Minor Injury</option><option>Major Injury</option><option>Illness</option><option>Emergency</option>
+        </select>
+        <button class="btn-outline" onclick="downloadTablePDF('firstaidTable','First Aid Records')">↓ PDF</button>
+      </div>
+      <div class="table-wrap">
+        <table id="firstaidTable">
+          <thead><tr><th>Date</th><th>Time</th><th>Student/Staff</th><th>Type</th><th>Treatment</th><th>Attendant</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="firstaidBody"><tr><td colspan="8" class="loading-td">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRANSPORT -->
+  <section class="page" id="page-transport">
+    <div class="card">
+      <div class="card-header"><span>Transport Security Log</span><button class="btn-primary" onclick="openModal('transport')">+ Add Record</button></div>
+      <div class="filter-bar">
+        <input type="date" id="transportFilter" onchange="loadTransport()" />
+        <select id="transportStatusFilter" onchange="loadTransport()">
+          <option value="">All Status</option><option>On Time</option><option>Delayed</option><option>Issue Reported</option>
+        </select>
+        <button class="btn-outline" onclick="downloadTablePDF('transportTable','Transport Records')">↓ PDF</button>
+      </div>
+      <div class="table-wrap">
+        <table id="transportTable">
+          <thead><tr><th>Date</th><th>Bus No.</th><th>Driver</th><th>Route</th><th>Departure</th><th>Return</th><th>Students</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="transportBody"><tr><td colspan="9" class="loading-td">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTRUMENTS -->
+  <section class="page" id="page-instruments">
+    <div class="card">
+      <div class="card-header"><span>Safety Instruments Condition</span><button class="btn-primary" onclick="openModal('instrument')">+ Add Instrument</button></div>
+      <div class="filter-bar">
+        <select id="instrumentCatFilter" onchange="loadInstruments()">
+          <option value="">All Categories</option><option value="CCTV">CCTV Camera</option><option value="Fire">Fire Safety</option><option value="Medical">Medical Equipment</option><option value="Transport">Transport Equipment</option><option value="Communication">Communication</option>
+        </select>
+        <select id="instrumentCondFilter" onchange="loadInstruments()">
+          <option value="">All Conditions</option><option>Working</option><option>Needs Maintenance</option><option>Faulty</option>
+        </select>
+        <button class="btn-outline" onclick="downloadTablePDF('instrumentTable','Instruments Report')">↓ PDF</button>
+      </div>
+      <div class="table-wrap">
+        <table id="instrumentTable">
+          <thead><tr><th>Name</th><th>Category</th><th>Location</th><th>Last Checked</th><th>Condition</th><th>Next Service</th><th>Notes</th><th>Actions</th></tr></thead>
+          <tbody id="instrumentBody"><tr><td colspan="8" class="loading-td">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALERTS -->
+  <section class="page" id="page-alerts">
+    <div class="card">
+      <div class="card-header"><span>🚨 Active Flagged Alerts</span><button class="btn-outline" onclick="downloadTablePDF('alertsTable','Alerts Report')">↓ PDF</button></div>
+      <div id="alertsContainer" class="alerts-grid"><div class="loading-msg">Loading…</div></div>
+      <table id="alertsTable" style="display:none"><thead><tr><th>Type</th><th>Name</th><th>Condition</th><th>Location</th><th>Date</th><th>Notes</th></tr></thead><tbody id="alertsTableBody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section class="page" id="page-reports">
+    <div class="dash-grid">
+      <div class="card">
+        <div class="card-header"><span>Monthly CCTV Analysis</span><button class="btn-small" onclick="downloadChartPDF('cctvMonthChart','Monthly CCTV')">↓ PDF</button></div>
+        <canvas id="cctvMonthChart" height="240"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header"><span>First Aid by Type</span><button class="btn-small" onclick="downloadChartPDF('aidPieChart','First Aid Types')">↓ PDF</button></div>
+        <canvas id="aidPieChart" height="240"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header"><span>Transport Status Summary</span><button class="btn-small" onclick="downloadChartPDF('transportBarChart','Transport Status')">↓ PDF</button></div>
+        <canvas id="transportBarChart" height="240"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header"><span>Instrument Health</span><button class="btn-small" onclick="downloadChartPDF('instrHealthChart','Instrument Health')">↓ PDF</button></div>
+        <canvas id="instrHealthChart" height="240"></canvas>
+      </div>
+    </div>
+    <div class="card mt">
+      <div class="card-header"><span>Generate Full PDF Report</span></div>
+      <div class="report-gen">
+        <div class="rg-row"><label>From Date</label><input type="date" id="reportFrom" /></div>
+        <div class="rg-row"><label>To Date</label><input type="date" id="reportTo" /></div>
+        <div class="rg-row">
+          <label>Section</label>
+          <select id="reportSection">
+            <option value="all">All Sections</option><option value="cctv">CCTV Only</option><option value="firstaid">First Aid Only</option><option value="transport">Transport Only</option><option value="instruments">Instruments Only</option>
+          </select>
+        </div>
+        <button class="btn-primary large" onclick="generateFullReport()">↓ Download Full Report</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- OVERLAY -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+
+<!-- CCTV MODAL -->
+<div class="modal" id="modal-cctv">
+  <div class="modal-header"><h2>CCTV Log Entry</h2><button onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="cctv-edit-id" />
+    <div class="form-row"><label>Date *</label><input type="date" id="cctv-date" /></div>
+    <div class="form-row"><label>Camera ID *</label><input type="text" id="cctv-camid" placeholder="e.g. CAM-01" /></div>
+    <div class="form-row"><label>Location *</label><input type="text" id="cctv-location" placeholder="e.g. Main Gate" /></div>
+    <div class="form-row"><label>Status *</label><select id="cctv-status"><option>Working</option><option>Faulty</option><option>Offline</option></select></div>
+    <div class="form-row"><label>Inspector Name</label><input type="text" id="cctv-inspector" /></div>
+    <div class="form-row"><label>Notes</label><textarea id="cctv-notes" rows="3"></textarea></div>
+    <div class="form-actions"><button class="btn-outline" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="saveCCTV()">Save Record</button></div>
+  </div>
+</div>
+
+<!-- FIRST AID MODAL -->
+<div class="modal" id="modal-firstaid">
+  <div class="modal-header"><h2>First Aid Record</h2><button onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="aid-edit-id" />
+    <div class="form-row"><label>Date *</label><input type="date" id="aid-date" /></div>
+    <div class="form-row"><label>Time *</label><input type="time" id="aid-time" /></div>
+    <div class="form-row"><label>Student/Staff Name *</label><input type="text" id="aid-name" /></div>
+    <div class="form-row"><label>Incident Type *</label><select id="aid-type"><option>Minor Injury</option><option>Major Injury</option><option>Illness</option><option>Emergency</option></select></div>
+    <div class="form-row"><label>Treatment Given</label><textarea id="aid-treatment" rows="2"></textarea></div>
+    <div class="form-row"><label>Attendant Name</label><input type="text" id="aid-attendant" /></div>
+    <div class="form-row"><label>Status</label><select id="aid-status"><option>Treated &amp; Released</option><option>Referred to Hospital</option><option>Under Observation</option></select></div>
+    <div class="form-actions"><button class="btn-outline" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="saveFirstAid()">Save Record</button></div>
+  </div>
+</div>
+
+<!-- TRANSPORT MODAL -->
+<div class="modal" id="modal-transport">
+  <div class="modal-header"><h2>Transport Log Entry</h2><button onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="trans-edit-id" />
+    <div class="form-row"><label>Date *</label><input type="date" id="trans-date" /></div>
+    <div class="form-row"><label>Bus Number *</label><input type="text" id="trans-bus" placeholder="e.g. PB-2024" /></div>
+    <div class="form-row"><label>Driver Name *</label><input type="text" id="trans-driver" /></div>
+    <div class="form-row"><label>Route</label><input type="text" id="trans-route" /></div>
+    <div class="form-row"><label>Departure Time</label><input type="time" id="trans-depart" /></div>
+    <div class="form-row"><label>Return Time</label><input type="time" id="trans-return" /></div>
+    <div class="form-row"><label>Students Count</label><input type="number" id="trans-students" min="0" /></div>
+    <div class="form-row"><label>Status *</label><select id="trans-status"><option>On Time</option><option>Delayed</option><option>Issue Reported</option></select></div>
+    <div class="form-row"><label>Notes</label><textarea id="trans-notes" rows="2"></textarea></div>
+    <div class="form-actions"><button class="btn-outline" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="saveTransport()">Save Record</button></div>
+  </div>
+</div>
+
+<!-- INSTRUMENT MODAL -->
+<div class="modal" id="modal-instrument">
+  <div class="modal-header"><h2>Instrument Record</h2><button onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="instr-edit-id" />
+    <div class="form-row"><label>Instrument Name *</label><input type="text" id="instr-name" /></div>
+    <div class="form-row"><label>Category *</label><select id="instr-cat"><option value="CCTV">CCTV Camera</option><option value="Fire">Fire Safety</option><option value="Medical">Medical Equipment</option><option value="Transport">Transport Equipment</option><option value="Communication">Communication</option></select></div>
+    <div class="form-row"><label>Location</label><input type="text" id="instr-loc" /></div>
+    <div class="form-row"><label>Last Checked Date</label><input type="date" id="instr-checked" /></div>
+    <div class="form-row"><label>Condition *</label><select id="instr-cond"><option>Working</option><option>Needs Maintenance</option><option>Faulty</option></select></div>
+    <div class="form-row"><label>Next Service Date</label><input type="date" id="instr-service" /></div>
+    <div class="form-row"><label>Notes</label><textarea id="instr-notes" rows="2"></textarea></div>
+    <div class="form-actions"><button class="btn-outline" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="saveInstrument()">Save Record</button></div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal small-modal" id="modal-confirm">
+  <div class="modal-header"><h2>Confirm Delete</h2><button onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <p style="text-align:center;color:var(--text-muted);margin:1rem 0">Are you sure you want to delete this record? This action cannot be undone.</p>
+    <div class="form-actions"><button class="btn-outline" onclick="closeModal()">Cancel</button><button class="btn-danger" id="confirmDeleteBtn">Delete</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
