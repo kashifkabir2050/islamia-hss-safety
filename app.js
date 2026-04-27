@@ -3,6 +3,75 @@
 // Main Application Logic
 // =====================================================
 
+// ===== LOGIN SYSTEM =====
+const USERS = {
+  'admin':    { password: 'islamia2024', role: 'Administrator' },
+  'principal':{ password: 'principal123', role: 'Principal' },
+  'safetymgr':{ password: 'safety2024',  role: 'Safety Manager' }
+};
+
+function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+
+  if (!user || !pass) {
+    errEl.textContent = '⚠ Please enter username and password';
+    return;
+  }
+
+  const account = USERS[user.toLowerCase()];
+  if (!account || account.password !== pass) {
+    errEl.textContent = '✕ Invalid username or password';
+    document.getElementById('loginPass').value = '';
+    return;
+  }
+
+  // Save session
+  sessionStorage.setItem('pihss_user', user);
+  sessionStorage.setItem('pihss_role', account.role);
+
+  // Show app
+  document.getElementById('loginPage').style.display = 'none';
+  const appShell = document.getElementById('appShell');
+  appShell.style.display = 'flex';
+
+  document.getElementById('topbarUser').textContent = account.role;
+
+  // Init app
+  setTimeout(init, 200);
+}
+
+function doLogout() {
+  sessionStorage.removeItem('pihss_user');
+  sessionStorage.removeItem('pihss_role');
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').textContent = '';
+  // Destroy all charts
+  Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
+  chartInstances = {};
+}
+
+function togglePw() {
+  const inp = document.getElementById('loginPass');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// Check existing session
+(function checkSession() {
+  const user = sessionStorage.getItem('pihss_user');
+  if (user && USERS[user]) {
+    document.getElementById('loginPage').style.display = 'none';
+    const appShell = document.getElementById('appShell');
+    appShell.style.display = 'flex';
+    document.getElementById('topbarUser').textContent = USERS[user].role;
+  }
+})();
+
 // ===== DATE HELPERS =====
 function today() {
   return new Date().toISOString().split('T')[0];
@@ -685,16 +754,29 @@ async function loadReportsCharts() {
     ]);
 
     const cctvDocs = cctvSnap.docs.map(d => d.data());
-    const aidDocs = aidSnap.docs.map(d => d.data());
+    const aidDocs  = aidSnap.docs.map(d => d.data());
     const transDocs = transSnap.docs.map(d => d.data());
     const instrDocs = instrSnap.docs.map(d => d.data());
 
-    // Monthly CCTV line chart
+    // ---- Summary strip ----
+    const faultyCount = instrDocs.filter(d => d.condition !== 'Working').length;
+    const issueTrips  = transDocs.filter(d => d.status === 'Issue Reported').length;
+    const summaryEl   = document.getElementById('reportsSummary');
+    if (summaryEl) {
+      summaryEl.innerHTML = `
+        <div class="rs-card"><div class="rs-num" style="color:var(--cctv)">${cctvDocs.length}</div><div class="rs-label">Total CCTV Logs</div></div>
+        <div class="rs-card"><div class="rs-num" style="color:var(--aid)">${aidDocs.length}</div><div class="rs-label">First Aid Cases</div></div>
+        <div class="rs-card"><div class="rs-num" style="color:var(--transport)">${transDocs.length}</div><div class="rs-label">Transport Trips</div></div>
+        <div class="rs-card"><div class="rs-num" style="color:var(--alert)">${faultyCount}</div><div class="rs-label">Faulty Instruments</div></div>
+      `;
+    }
+
+    // ---- Monthly CCTV line chart ----
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const currentYear = new Date().getFullYear();
     const cctvMonthly = months.map((_, i) => cctvDocs.filter(d => {
       if (!d.date) return false;
-      const dt = new Date(d.date);
+      const dt = new Date(d.date + 'T00:00:00');
       return dt.getFullYear() === currentYear && dt.getMonth() === i;
     }).length);
 
@@ -702,52 +784,92 @@ async function loadReportsCharts() {
       type: 'line',
       data: {
         labels: months,
-        datasets: [{ label: 'CCTV Logs', data: cctvMonthly, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.1)', tension: 0.4, fill: true, pointBackgroundColor: '#0ea5e9', pointRadius: 4 }]
+        datasets: [{
+          label: 'CCTV Logs',
+          data: cctvMonthly,
+          borderColor: '#0ea5e9',
+          backgroundColor: 'rgba(14,165,233,0.12)',
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: '#0ea5e9',
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }]
       },
       options: chartOptions()
     });
 
-    // Aid pie chart
-    const aidTypes = ['Minor Injury','Major Injury','Illness','Emergency'];
+    // ---- First Aid pie chart ----
+    const aidTypes  = ['Minor Injury','Major Injury','Illness','Emergency'];
     const aidCounts = aidTypes.map(t => aidDocs.filter(d => d.type === t).length);
 
     renderChart('aidPieChart', {
-      type: 'pie',
+      type: 'doughnut',
       data: {
         labels: aidTypes,
-        datasets: [{ data: aidCounts, backgroundColor: ['#22c55e','#ef4444','#f59e0b','#a855f7'], borderWidth: 0 }]
+        datasets: [{
+          data: aidCounts,
+          backgroundColor: ['#22c55e','#ef4444','#f59e0b','#a855f7'],
+          borderWidth: 0,
+          hoverOffset: 8
+        }]
       },
-      options: { ...chartOptions(), plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } } } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '55%',
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 }, padding: 16 } }
+        }
+      }
     });
 
-    // Transport bar
+    // ---- Transport horizontal bar ----
     const tStatuses = ['On Time','Delayed','Issue Reported'];
-    const tCounts = tStatuses.map(s => transDocs.filter(d => d.status === s).length);
+    const tCounts   = tStatuses.map(s => transDocs.filter(d => d.status === s).length);
 
     renderChart('transportBarChart', {
       type: 'bar',
       data: {
         labels: tStatuses,
-        datasets: [{ label: 'Trips', data: tCounts, backgroundColor: ['#22c55e','#f59e0b','#ef4444'], borderRadius: 6 }]
+        datasets: [{
+          label: 'Trips',
+          data: tCounts,
+          backgroundColor: ['rgba(34,197,94,0.75)','rgba(245,158,11,0.75)','rgba(239,68,68,0.75)'],
+          borderRadius: 6,
+          borderSkipped: false
+        }]
       },
-      options: { ...chartOptions(), indexAxis: 'y' }
+      options: {
+        ...chartOptions(),
+        indexAxis: 'y',
+        plugins: { legend: { display: false } }
+      }
     });
 
-    // Instrument health
-    const cats = ['CCTV','Fire','Medical','Transport','Communication'];
+    // ---- Instrument health stacked bar ----
+    const cats      = ['CCTV','Fire','Medical','Transport','Communication'];
     const catHealth = cats.map(c => instrDocs.filter(d => d.category === c && d.condition === 'Working').length);
-    const catFault = cats.map(c => instrDocs.filter(d => d.category === c && d.condition !== 'Working').length);
+    const catFault  = cats.map(c => instrDocs.filter(d => d.category === c && d.condition !== 'Working').length);
 
     renderChart('instrHealthChart', {
       type: 'bar',
       data: {
         labels: cats,
         datasets: [
-          { label: 'Working', data: catHealth, backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 4 },
-          { label: 'Faulty/Maint.', data: catFault, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 }
+          { label: 'Working',      data: catHealth, backgroundColor: 'rgba(34,197,94,0.75)',  borderRadius: 4 },
+          { label: 'Faulty/Maint.',data: catFault,  backgroundColor: 'rgba(239,68,68,0.75)',  borderRadius: 4 }
         ]
       },
-      options: { ...chartOptions(), scales: { x: { stacked: true, ticks: { color: '#64748b' }, grid: { color: '#1e2d4a' } }, y: { stacked: true, ticks: { color: '#64748b' }, grid: { color: '#1e2d4a' } } } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } },
+        scales: {
+          x: { stacked: true, ticks: { color: '#64748b' }, grid: { color: '#1e2d4a' } },
+          y: { stacked: true, ticks: { color: '#64748b' }, grid: { color: '#1e2d4a' } }
+        }
+      }
     });
 
   } catch (e) {
@@ -771,10 +893,14 @@ function chartOptions() {
 }
 
 function renderChart(id, config) {
-  if (chartInstances[id]) { chartInstances[id].destroy(); }
+  if (chartInstances[id]) {
+    try { chartInstances[id].destroy(); } catch(e) {}
+    delete chartInstances[id];
+  }
   const canvas = document.getElementById(id);
   if (!canvas) return;
-  chartInstances[id] = new Chart(canvas, config);
+  const ctx = canvas.getContext('2d');
+  chartInstances[id] = new Chart(ctx, config);
 }
 
 // ===== PDF EXPORTS =====

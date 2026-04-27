@@ -14,12 +14,46 @@
 </head>
 <body>
 
+<!-- ===== LOGIN PAGE ===== -->
+<div id="loginPage" class="login-page">
+  <div class="login-bg">
+    <div class="login-grid"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-emblem">☪</div>
+    <div class="login-title">Pakistan Islamia</div>
+    <div class="login-subtitle">Higher Secondary School</div>
+    <div class="login-system">Safety Management System</div>
+    <div class="login-form">
+      <div class="login-field">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username" />
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+          <button class="pw-toggle" onclick="togglePw()" id="pwToggleBtn">👁</button>
+        </div>
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" onclick="doLogin()">
+        <span id="loginBtnText">Sign In</span>
+      </button>
+    </div>
+    <div class="login-hint">Default: admin / islamia2024</div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP (hidden until logged in) ===== -->
+<div id="appShell" style="display:none; width:100%; min-height:100vh; display:none; flex-direction:row;">
+
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="logo-emblem">☪</div>
     <div class="logo-text">
-      <span class="logo-main">PIHSS Safety Management System</span>
-      <span class="logo-sub">Safety Management System</span>
+      <span class="logo-main">PIHSS Safety</span>
+      <span class="logo-sub">Management System</span>
     </div>
   </div>
   <ul class="nav-links">
@@ -37,6 +71,7 @@
   <div class="sidebar-footer">
     <div class="date-display" id="sidebarDate"></div>
     <div class="firebase-status" id="fbStatus">● Connecting…</div>
+    <button class="logout-btn" onclick="doLogout()">⏻ Logout</button>
   </div>
 </nav>
 
@@ -46,6 +81,7 @@
     <h1 class="page-title" id="pageTitle">Dashboard</h1>
     <div class="topbar-right">
       <span class="current-date" id="topDate"></span>
+      <span class="topbar-user" id="topbarUser"></span>
     </div>
   </header>
 
@@ -72,11 +108,11 @@
     <div class="dash-grid">
       <div class="card">
         <div class="card-header"><span>Weekly Safety Overview</span><button class="btn-small" onclick="downloadChartPDF('weeklyChart','Weekly Safety Overview')">↓ PDF</button></div>
-        <canvas id="weeklyChart" height="220"></canvas>
+        <div class="chart-container"><canvas id="weeklyChart"></canvas></div>
       </div>
       <div class="card">
         <div class="card-header"><span>Instrument Status</span><button class="btn-small" onclick="downloadChartPDF('statusChart','Instrument Status')">↓ PDF</button></div>
-        <canvas id="statusChart" height="220"></canvas>
+        <div class="chart-container chart-doughnut"><canvas id="statusChart"></canvas></div>
       </div>
     </div>
     <div class="card mt">
@@ -178,33 +214,51 @@
 
   <!-- REPORTS -->
   <section class="page" id="page-reports">
-    <div class="dash-grid">
+    <div class="reports-summary" id="reportsSummary"></div>
+    <div class="reports-grid">
       <div class="card">
-        <div class="card-header"><span>Monthly CCTV Analysis</span><button class="btn-small" onclick="downloadChartPDF('cctvMonthChart','Monthly CCTV')">↓ PDF</button></div>
-        <canvas id="cctvMonthChart" height="240"></canvas>
+        <div class="card-header">
+          <span>📈 Monthly CCTV Analysis</span>
+          <button class="btn-small" onclick="downloadChartPDF('cctvMonthChart','Monthly CCTV')">↓ PDF</button>
+        </div>
+        <div class="chart-container"><canvas id="cctvMonthChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-header"><span>First Aid by Type</span><button class="btn-small" onclick="downloadChartPDF('aidPieChart','First Aid Types')">↓ PDF</button></div>
-        <canvas id="aidPieChart" height="240"></canvas>
+        <div class="card-header">
+          <span>🏥 First Aid by Type</span>
+          <button class="btn-small" onclick="downloadChartPDF('aidPieChart','First Aid Types')">↓ PDF</button>
+        </div>
+        <div class="chart-container"><canvas id="aidPieChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-header"><span>Transport Status Summary</span><button class="btn-small" onclick="downloadChartPDF('transportBarChart','Transport Status')">↓ PDF</button></div>
-        <canvas id="transportBarChart" height="240"></canvas>
+        <div class="card-header">
+          <span>🚌 Transport Status Summary</span>
+          <button class="btn-small" onclick="downloadChartPDF('transportBarChart','Transport Status')">↓ PDF</button>
+        </div>
+        <div class="chart-container"><canvas id="transportBarChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-header"><span>Instrument Health</span><button class="btn-small" onclick="downloadChartPDF('instrHealthChart','Instrument Health')">↓ PDF</button></div>
-        <canvas id="instrHealthChart" height="240"></canvas>
+        <div class="card-header">
+          <span>🔧 Instrument Health by Category</span>
+          <button class="btn-small" onclick="downloadChartPDF('instrHealthChart','Instrument Health')">↓ PDF</button>
+        </div>
+        <div class="chart-container"><canvas id="instrHealthChart"></canvas></div>
       </div>
     </div>
-    <div class="card mt">
-      <div class="card-header"><span>Generate Full PDF Report</span></div>
+
+    <div class="card mt" style="margin-top:16px">
+      <div class="card-header"><span>📄 Generate Full PDF Report</span></div>
       <div class="report-gen">
         <div class="rg-row"><label>From Date</label><input type="date" id="reportFrom" /></div>
         <div class="rg-row"><label>To Date</label><input type="date" id="reportTo" /></div>
         <div class="rg-row">
           <label>Section</label>
           <select id="reportSection">
-            <option value="all">All Sections</option><option value="cctv">CCTV Only</option><option value="firstaid">First Aid Only</option><option value="transport">Transport Only</option><option value="instruments">Instruments Only</option>
+            <option value="all">All Sections</option>
+            <option value="cctv">CCTV Only</option>
+            <option value="firstaid">First Aid Only</option>
+            <option value="transport">Transport Only</option>
+            <option value="instruments">Instruments Only</option>
           </select>
         </div>
         <button class="btn-primary large" onclick="generateFullReport()">↓ Download Full Report</button>
@@ -212,6 +266,8 @@
     </div>
   </section>
 </main>
+
+</div><!-- /appShell -->
 
 <!-- OVERLAY -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
